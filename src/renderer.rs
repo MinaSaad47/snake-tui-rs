@@ -4,8 +4,8 @@ use std::{
 };
 
 use crossterm::{
-    cursor, execute, queue,
-    terminal::{self, ClearType},
+    cursor, execute, queue, style,
+    terminal,
 };
 
 pub trait Display {
@@ -32,12 +32,23 @@ impl Renderer {
 
         Self { stdout }
     }
-    pub fn display_all(&mut self, objects: &[&dyn Display]) -> crossterm::Result<()> {
-        queue!(self.stdout, terminal::Clear(ClearType::All))?;
+    pub fn display(&mut self, objects: &[&dyn Display]) -> crossterm::Result<()> {
+        self.clear()?;
         for obj in objects.iter() {
             obj.display(&mut self.stdout)?;
         }
         self.stdout.flush()?;
+        Ok(())
+    }
+    fn clear(&mut self) -> crossterm::Result<()> {
+        let (x_max, y_max) = terminal::size()?;
+        for y in 1..(y_max - 1) {
+            queue!(
+                self.stdout,
+                cursor::MoveTo(1, y),
+                style::Print(" ".repeat(x_max as usize - 2))
+            )?;
+        }
         Ok(())
     }
 }

@@ -33,6 +33,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut renderer = Renderer::new();
 
+    renderer.display(&[&map])?;
+
     // game loop
     while snake.alive {
         // event handling
@@ -49,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // update game objects
         update_objects(&mut snake, &mut food)?;
         // display game object
-        renderer.display_all(&[&map, &snake, &food])?;
+        renderer.display(&[&snake, &food])?;
     }
 
     Ok(())

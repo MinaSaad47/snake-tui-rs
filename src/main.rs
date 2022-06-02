@@ -27,7 +27,7 @@ use snake_tui_rs::{food::Food, map::Map, math::Vec2, renderer::Renderer, snake::
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // game object
-    let map = Map::new("-", "-", "|", "|", "+");
+    let mut map = Map::new("-", "-", "|", "|", "+");
     let mut snake = Snake::new(SNAKE_HEAD, SNAKE_BODY, terminal::size()?);
     let mut food = Food::new(FOOD, &Vec2::new(16, 16));
 
@@ -44,6 +44,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if !handle_keyboard(key.code, &mut snake) {
                         break;
                     }
+                },
+                Event::Resize(_, _) => {
+                    renderer.clear_all()?;
+                    map.generate_borders();
+                    renderer.render(&[&map])?;
                 }
                 _ => {}
             }

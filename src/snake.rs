@@ -1,15 +1,12 @@
-use std::{collections::LinkedList, io::Stdout};
+use std::collections::LinkedList;
 
-use crossterm::{
-    cursor, queue,
-    style::{self, Stylize},
-};
+use crossterm::style::{self, Stylize, StyledContent};
 
 use crate::{math::Vec2, renderer};
 
 pub struct Snake {
-    pub head_icon: String,
-    pub body_icon: String,
+    pub head_icon: StyledContent<String>,
+    pub body_icon: StyledContent<String>,
     pub body: LinkedList<Vec2>,
     pub dir: Vec2,
     pub alive: bool,
@@ -18,8 +15,8 @@ pub struct Snake {
 impl Snake {
     pub fn new(head_icon: &str, body_icon: &str, (x_max, y_max): (u16, u16)) -> Self {
         Self {
-            head_icon: head_icon.to_string(),
-            body_icon: body_icon.to_string(),
+            head_icon: head_icon.to_string().green(),
+            body_icon: body_icon.to_string().yellow(),
             body: {
                 let mut body = LinkedList::new();
                 body.push_front(Vec2::new(x_max as i16 / 2, y_max as i16 / 2));
@@ -32,26 +29,15 @@ impl Snake {
 }
 
 impl<'a> renderer::Render<'a> for Snake {
-    fn render(&self, stdout: &mut Stdout) -> crossterm::Result<()> {
-        if let Some(&head) = self.body.front() {
-            queue!(
-                stdout,
-                cursor::MoveTo(head.x as u16, head.y as u16),
-                style::PrintStyledContent(self.head_icon.as_str().green())
-            )?;
-        }
-        for part in self.body.iter().skip(1) {
-            queue!(
-                stdout,
-                cursor::MoveTo(part.x as u16, part.y as u16),
-                style::PrintStyledContent(self.body_icon.as_str().dark_yellow())
-            )?;
-        }
-        Ok(())
-    }
-    fn to_clear(&'a self) -> Box<dyn std::iter::Iterator<Item = &Vec2> + 'a> {
+    fn render(&'a self) -> Box<dyn std::iter::Iterator<Item = (&'a Vec2, &'a style::StyledContent<String>)> + 'a> {
         Box::new(
-            self.body.back().into_iter()
+            self.body.iter().enumerate().map(|(index, part)| {
+                if index == 0 {
+                    (part, &self.head_icon)
+                } else {
+                    (part, &self.body_icon)
+                }
+            })
         )
     }
 }

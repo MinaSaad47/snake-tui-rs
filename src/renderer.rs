@@ -3,18 +3,14 @@ use std::{
     ops,
 };
 
-use crossterm::{
-    cursor, execute, queue, style,
-    terminal,
-};
+use crossterm::{terminal::{self, ClearType}, style::{StyledContent, self}, queue};
+use crossterm::execute;
+use crossterm::cursor;
 
 use crate::math::Vec2;
 
 pub trait Render<'a> {
-    fn render(&self, stdout: &mut Stdout) -> crossterm::Result<()>;
-    fn to_clear(&'a self) -> Box<dyn std::iter::Iterator<Item = &Vec2> + 'a> { // I do not know what I'am doing here, Seriously !!!
-        Box::new(std::iter::empty())
-    }
+    fn render(&'a self) -> Box<dyn std::iter::Iterator<Item = (&'a Vec2, &'a StyledContent<String>)> + 'a>;
 }
 
 pub struct Renderer {
@@ -37,19 +33,34 @@ impl Renderer {
 
         Self { stdout }
     }
-    pub fn render(&mut self, objects: &[&dyn Render]) -> crossterm::Result<()> {
+    pub fn render<'a>(&mut self, objects: &[&'a (dyn Render<'a> + 'a)]) -> crossterm::Result<()> {
         for obj in objects.iter() {
-            obj.render(&mut self.stdout)?;
+            for (pos, c) in obj.render() {
+                queue!(self.stdout,
+                    cursor::MoveTo(pos.x as u16, pos.y as u16),
+                    style::PrintStyledContent(c.clone())
+                )?;
+            }
         }
         self.stdout.flush()?;
         Ok(())
     }
     pub fn clear<'a>(&mut self, objects: &[&'a (dyn Render<'a> + 'a)]) -> crossterm::Result<()> {
         for obj in objects {
-            for i in obj.to_clear() {
-                queue!(self.stdout, cursor::MoveTo(i.x as u16, i.y as u16), style::Print(" "))?;
-            };
+            for (pos, _) in obj.render() {
+                queue!(self.stdout,
+                    cursor::MoveTo(pos.x as u16, pos.y as u16),
+                    style::Print(" "),
+                )?;
+            }
         }
+        self.stdout.flush()?;
+        Ok(())
+    }
+    pub fn clear_all(&mut self) -> crossterm::Result<()> {
+        queue!(self.stdout,
+            terminal::Clear(ClearType::All),
+        )?;
         self.stdout.flush()?;
         Ok(())
     }

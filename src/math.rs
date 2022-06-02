@@ -31,3 +31,13 @@ impl ops::Sub for Vec2 {
         }
     }
 }
+
+impl ops::Mul for Vec2 {
+    type Output = Vec2;
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self::Output {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+        }
+    }
+}

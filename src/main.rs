@@ -1,25 +1,12 @@
-#![allow(unused_imports)]
-
 const SNAKE_HEAD: &str = "#";
 const SNAKE_BODY: &str = "O";
 const FOOD: &str = "O";
 
-use std::{
-    borrow::BorrowMut,
-    cell::RefCell,
-    collections::LinkedList,
-    io::{self, Stdout, StdoutLock, Write},
-    iter::Skip,
-    ops, thread,
-    time::Duration,
-};
+use std::time::Duration;
 
 use crossterm::{
-    cursor,
-    event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
-    execute, queue,
-    style::{self, StyledContent, Stylize},
-    terminal::{self, ClearType},
+    event::{self, Event, KeyCode},
+    terminal,
 };
 
 use rand::{self, Rng};
@@ -92,17 +79,40 @@ fn update_objects(snake: &mut Snake, food: &mut Food) -> crossterm::Result<()> {
         prev_part = *part;
         *part = *part + dir;
     }
+    // map colision
+    let (x_max, y_max) = terminal::size()?;
+    for part in snake.body.iter_mut() {
+        // left colision
+        if part.x == 0 && snake.dir == Vec2::new(-1, 0) {
+            part.x = x_max as i16 - 2;
+        }
+        // right colision
+        if part.x == x_max as i16 - 1 && snake.dir == Vec2::new(1, 0) {
+            part.x = 1;
+        }
+        // top colision
+        if part.y == 0 && snake.dir == Vec2::new(0, -1) {
+            part.y = y_max as i16 - 2;
+        }
+        // bottom colision
+        if part.y == y_max as i16 -1 && snake.dir == Vec2::new(0, 1) {
+            part.y = 1;
+        }
+    }
     Ok(())
 }
 
 fn handle_keyboard(code: KeyCode, snake: &mut Snake) -> bool {
-    match code {
+    let new_dir = match code {
         KeyCode::Char('q') => return false,
-        KeyCode::Up => snake.dir = Vec2::new(0, -1),
-        KeyCode::Down => snake.dir = Vec2::new(0, 1),
-        KeyCode::Left => snake.dir = Vec2::new(-1, 0),
-        KeyCode::Right => snake.dir = Vec2::new(1, 0),
-        _ => {}
+        KeyCode::Up => Vec2::new(0, -1),
+        KeyCode::Down => Vec2::new(0, 1),
+        KeyCode::Left => Vec2::new(-1, 0),
+        KeyCode::Right =>  Vec2::new(1, 0),
+        _ => snake.dir
+    };
+    if snake.dir + new_dir != Vec2::new(0, 0) || snake.body.len() == 1 {
+        snake.dir = new_dir
     }
     true
 }

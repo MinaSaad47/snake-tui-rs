@@ -26,8 +26,8 @@ impl Map {
     }
 }
 
-impl renderer::Display for Map {
-    fn display(&self, stdout: &mut std::io::Stdout) -> crossterm::Result<()> {
+impl<'a> renderer::Render<'a> for Map {
+    fn render(&self, stdout: &mut std::io::Stdout) -> crossterm::Result<()> {
         let (x_max, y_max) = terminal::size()?;
         queue!(
             stdout,

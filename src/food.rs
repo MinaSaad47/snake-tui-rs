@@ -21,13 +21,18 @@ impl Food {
     }
 }
 
-impl renderer::Display for Food {
-    fn display(&self, stdout: &mut Stdout) -> crossterm::Result<()> {
+impl<'a> renderer::Render<'a> for Food {
+    fn render(&self, stdout: &mut Stdout) -> crossterm::Result<()> {
         queue!(
             stdout,
             cursor::MoveTo(self.pos.x as u16, self.pos.y as u16),
             style::PrintStyledContent(self.icon.as_str().red())
         )?;
         Ok(())
+    }
+    fn to_clear(&'a self) -> Box<dyn std::iter::Iterator<Item = &Vec2> + 'a> {
+        Box::new(
+            vec![&self.pos].into_iter()
+        )
     }
 }

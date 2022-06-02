@@ -8,8 +8,13 @@ use crossterm::{
     terminal,
 };
 
-pub trait Display {
-    fn display(&self, stdout: &mut Stdout) -> crossterm::Result<()>;
+use crate::math::Vec2;
+
+pub trait Render<'a> {
+    fn render(&self, stdout: &mut Stdout) -> crossterm::Result<()>;
+    fn to_clear(&'a self) -> Box<dyn std::iter::Iterator<Item = &Vec2> + 'a> { // I do not know what I'am doing here, Seriously !!!
+        Box::new(std::iter::empty())
+    }
 }
 
 pub struct Renderer {
@@ -32,23 +37,20 @@ impl Renderer {
 
         Self { stdout }
     }
-    pub fn display(&mut self, objects: &[&dyn Display]) -> crossterm::Result<()> {
-        self.clear()?;
+    pub fn render(&mut self, objects: &[&dyn Render]) -> crossterm::Result<()> {
         for obj in objects.iter() {
-            obj.display(&mut self.stdout)?;
+            obj.render(&mut self.stdout)?;
         }
         self.stdout.flush()?;
         Ok(())
     }
-    fn clear(&mut self) -> crossterm::Result<()> {
-        let (x_max, y_max) = terminal::size()?;
-        for y in 1..(y_max - 1) {
-            queue!(
-                self.stdout,
-                cursor::MoveTo(1, y),
-                style::Print(" ".repeat(x_max as usize - 2))
-            )?;
+    pub fn clear<'a>(&mut self, objects: &[&'a (dyn Render<'a> + 'a)]) -> crossterm::Result<()> {
+        for obj in objects {
+            for i in obj.to_clear() {
+                queue!(self.stdout, cursor::MoveTo(i.x as u16, i.y as u16), style::Print(" "))?;
+            };
         }
+        self.stdout.flush()?;
         Ok(())
     }
 }

@@ -31,8 +31,8 @@ impl Snake {
     }
 }
 
-impl renderer::Display for Snake {
-    fn display(&self, stdout: &mut Stdout) -> crossterm::Result<()> {
+impl<'a> renderer::Render<'a> for Snake {
+    fn render(&self, stdout: &mut Stdout) -> crossterm::Result<()> {
         if let Some(&head) = self.body.front() {
             queue!(
                 stdout,
@@ -48,5 +48,10 @@ impl renderer::Display for Snake {
             )?;
         }
         Ok(())
+    }
+    fn to_clear(&'a self) -> Box<dyn std::iter::Iterator<Item = &Vec2> + 'a> {
+        Box::new(
+            self.body.back().into_iter()
+        )
     }
 }

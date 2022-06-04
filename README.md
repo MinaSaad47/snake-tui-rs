@@ -4,9 +4,9 @@
 ![demo](demo.gif)
 
 ## Install
-``sh
+```sh
 cargo install snake-tui-rs
-``
+```
 
 ## Build
 ```sh

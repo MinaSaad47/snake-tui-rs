@@ -1,22 +1,21 @@
-const SNAKE_HEAD: &str = "#";
-const SNAKE_BODY: &str = "O";
-const FOOD: &str = "O";
+const SNAKE_HEAD_CHAR: &str = "#";
+const SNAKE_BODY_CHAR: &str = "O";
+const FOOD_CHAR: &str = "O";
 
 use std::time::Duration;
 
 use crossterm::{
-    event::{self, Event, KeyCode},
+    event::{self, Event},
     terminal,
 };
 
-use rand::{self, Rng};
-use snake_tui_rs::{food::Food, map::Map, math::Vec2, renderer::Renderer, snake::Snake};
+use snake_tui_rs::{food::Food, game, map::Map, math::Vec2, renderer::Renderer, snake::Snake};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // game object
     let mut map = Map::new("-", "-", "|", "|", "+");
-    let mut snake = Snake::new(SNAKE_HEAD, SNAKE_BODY, terminal::size()?);
-    let mut food = Food::new(FOOD, &Vec2::new(16, 16));
+    let mut food = Food::new(FOOD_CHAR, &Vec2::new(16, 16));
+    let mut snake = Snake::new(SNAKE_HEAD_CHAR, SNAKE_BODY_CHAR, terminal::size()?);
 
     let mut renderer = Renderer::new();
 
@@ -28,10 +27,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if event::poll(Duration::from_millis(100))? {
             match event::read()? {
                 Event::Key(key) => {
-                    if !handle_keyboard(key.code, &mut snake) {
+                    if !game::handle_keyboard(key.code, &mut snake) {
                         break;
                     }
-                },
+                }
                 Event::Resize(_, _) => {
                     renderer.clear_all()?;
                     map.generate_borders();
@@ -43,76 +42,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // clear game objects
         renderer.clear(&[&snake, &food])?;
         // update game objects
-        update_objects(&mut snake, &mut food)?;
+        game::update_objects(&mut snake, &mut food)?;
         // display game object
         renderer.render(&[&snake, &food])?;
     }
 
     Ok(())
-}
-
-fn update_objects(snake: &mut Snake, food: &mut Food) -> crossterm::Result<()> {
-    let mut prev_part = Vec2::default();
-    let mut skip = 0;
-    if let Some(head) = snake.body.front_mut() {
-        prev_part = *head;
-        if *head + snake.dir == food.pos {
-            snake.body.push_front(food.pos);
-            let (x_max, y_max) = terminal::size()?;
-            let mut rng = rand::thread_rng();
-            let (new_x, new_y) = (rng.gen_range(1..x_max), rng.gen_range(1..y_max));
-            food.pos = Vec2::new(new_x as i16, new_y as i16);
-            skip = snake.body.len();
-        } else {
-            *head = *head + snake.dir;
-            skip = 1;
-        }
-    }
-
-    let head = prev_part; // to check if killed itself
-    for part in snake.body.iter_mut().skip(skip) {
-        if head == *part {
-            snake.alive = false;
-            return Ok(());
-        }
-        let dir = prev_part - *part;
-        prev_part = *part;
-        *part = *part + dir;
-    }
-    // map colision
-    let (x_max, y_max) = terminal::size()?;
-    for part in snake.body.iter_mut() {
-        // left colision
-        if part.x == 0 && snake.dir == Vec2::new(-1, 0) {
-            part.x = x_max as i16 - 2;
-        }
-        // right colision
-        if part.x == x_max as i16 - 1 && snake.dir == Vec2::new(1, 0) {
-            part.x = 1;
-        }
-        // top colision
-        if part.y == 0 && snake.dir == Vec2::new(0, -1) {
-            part.y = y_max as i16 - 2;
-        }
-        // bottom colision
-        if part.y == y_max as i16 -1 && snake.dir == Vec2::new(0, 1) {
-            part.y = 1;
-        }
-    }
-    Ok(())
-}
-
-fn handle_keyboard(code: KeyCode, snake: &mut Snake) -> bool {
-    let new_dir = match code {
-        KeyCode::Char('q') => return false,
-        KeyCode::Up => Vec2::new(0, -1),
-        KeyCode::Down => Vec2::new(0, 1),
-        KeyCode::Left => Vec2::new(-1, 0),
-        KeyCode::Right =>  Vec2::new(1, 0),
-        _ => snake.dir
-    };
-    if snake.dir + new_dir != Vec2::new(0, 0) || snake.body.len() == 1 {
-        snake.dir = new_dir
-    }
-    true
 }

@@ -1,6 +1,6 @@
 use std::collections::LinkedList;
 
-use crossterm::style::{self, Stylize, StyledContent};
+use crossterm::style::{self, StyledContent, Stylize};
 
 use crate::{math::Vec2, renderer};
 
@@ -29,15 +29,16 @@ impl Snake {
 }
 
 impl<'a> renderer::Render<'a> for Snake {
-    fn render(&'a self) -> Box<dyn std::iter::Iterator<Item = (&'a Vec2, &'a style::StyledContent<String>)> + 'a> {
-        Box::new(
-            self.body.iter().enumerate().map(|(index, part)| {
-                if index == 0 {
-                    (part, &self.head_icon)
-                } else {
-                    (part, &self.body_icon)
-                }
-            })
-        )
+    fn render(
+        &'a self,
+    ) -> Box<dyn std::iter::Iterator<Item = (&'a Vec2, &'a style::StyledContent<String>)> + 'a>
+    {
+        Box::new(self.body.iter().enumerate().map(|(index, part)| {
+            if index == 0 {
+                (part, &self.head_icon)
+            } else {
+                (part, &self.body_icon)
+            }
+        }))
     }
 }
